@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     restore_image_model: str = Field("gemini-3.1-flash-lite", alias="RESTORE_IMAGE_MODEL")
 
     # Vision model used for damage/era analysis and post-restoration verification.
-    analysis_model: str = Field("gemini-2.5-flash", alias="ANALYSIS_MODEL")
+    analysis_model: str = Field("gemini-3.1-flash-lite", alias="ANALYSIS_MODEL")
 
     # How many times the restore step may be retried when verification fails.
     max_restore_attempts: int = Field(2, ge=1, le=10, alias="MAX_RESTORE_ATTEMPTS")

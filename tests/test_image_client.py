@@ -80,7 +80,7 @@ def test_from_settings_allows_model_override(monkeypatch):
     client = ImageClient.from_settings(restore_model="custom-restore-model")
     assert client._restore_model == "custom-restore-model"
     # Untouched override falls back to the configured default.
-    assert client._analysis_model == "gemini-2.5-flash"
+    assert client._analysis_model == "gemini-3.1-flash-lite"
 
 
 def test_verify_returns_parsed_verification_with_both_images(mocker):
