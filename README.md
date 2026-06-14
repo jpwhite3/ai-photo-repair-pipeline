@@ -52,7 +52,7 @@ uv run photo-repair path/to/folder/ --batch
 uv run photo-repair photo.jpg --out ./results
 
 # Swap the restoration model for a single run (overrides RESTORE_IMAGE_MODEL)
-uv run photo-repair photo.jpg --model gemini-3.1-flash-lite
+uv run photo-repair photo.jpg --model gemini-3.1-flash-image
 ```
 
 The restoration model is easy to replace three ways, in increasing precedence:

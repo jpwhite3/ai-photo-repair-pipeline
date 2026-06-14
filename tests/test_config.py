@@ -16,7 +16,7 @@ def test_settings_defaults(monkeypatch):
     from photo_repair.config import Settings
 
     settings = Settings()
-    assert settings.restore_image_model == "gemini-3.1-flash-lite"
+    assert settings.restore_image_model == "gemini-3.1-flash-image"
     assert settings.analysis_model == "gemini-3.1-flash-lite"
     assert settings.max_restore_attempts == 2
     assert settings.output_dir == "restored_photos"
