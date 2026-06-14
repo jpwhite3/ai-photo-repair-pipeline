@@ -1,0 +1,108 @@
+"""Tests for photo_repair.nodes (image client mocked)."""
+
+from photo_repair.state import RestorationAnalysis, RestorationState, VerificationResult
+
+
+def _state(**kw):
+    base = {"input_path": "p.jpg", "image_bytes": b"OLD", "mime_type": "image/jpeg"}
+    base.update(kw)
+    return RestorationState(**base)
+
+
+def _passing_verification():
+    return VerificationResult(
+        composition_preserved=True, identity_preserved=True, quality_ok=True, issues=[]
+    )
+
+
+def _failing_verification():
+    return VerificationResult(
+        composition_preserved=False, identity_preserved=True, quality_ok=True, issues=["crop"]
+    )
+
+
+def test_analyze_node_success(mocker):
+    from photo_repair.nodes import analyze_node
+
+    client = mocker.Mock()
+    client.analyze.return_value = RestorationAnalysis(
+        era="1950s", photographic_process="silver print", defects=["fading"]
+    )
+    update = analyze_node(_state(), client)
+    assert update["analysis"].era == "1950s"
+    assert update["current_step"] == "analyzed"
+
+
+def test_analyze_node_falls_back_on_error(mocker):
+    from photo_repair.nodes import analyze_node
+
+    client = mocker.Mock()
+    client.analyze.side_effect = RuntimeError("boom")
+    update = analyze_node(_state(), client)
+    assert isinstance(update["analysis"], RestorationAnalysis)  # fallback, not a crash
+
+
+def test_restore_node_increments_attempts_and_sets_bytes(mocker):
+    from photo_repair.nodes import restore_node
+
+    client = mocker.Mock()
+    client.restore.return_value = b"NEW"
+    update = restore_node(_state(attempts=0), client)
+    assert update["restored_bytes"] == b"NEW"
+    assert update["attempts"] == 1
+
+
+def test_restore_node_records_failure_without_crashing(mocker):
+    from photo_repair.nodes import restore_node
+
+    client = mocker.Mock()
+    client.restore.side_effect = RuntimeError("api down")
+    update = restore_node(_state(attempts=1), client)
+    assert update["restored_bytes"] is None
+    assert update["attempts"] == 2
+
+
+def test_verify_node_fails_when_no_restored_image(mocker):
+    from photo_repair.nodes import verify_node
+
+    client = mocker.Mock()
+    update = verify_node(_state(restored_bytes=None), client)
+    assert update["verification"].passed is False
+    client.verify.assert_not_called()
+
+
+def test_verify_node_returns_result(mocker):
+    from photo_repair.nodes import verify_node
+
+    client = mocker.Mock()
+    client.verify.return_value = _passing_verification()
+    update = verify_node(_state(restored_bytes=b"NEW"), client)
+    assert update["verification"].passed is True
+
+
+def test_route_after_verify():
+    from photo_repair.nodes import route_after_verify
+
+    # Passed -> finalize
+    s = _state(restored_bytes=b"x", attempts=1, verification=_passing_verification())
+    assert route_after_verify(s, max_attempts=2) == "finalize"
+
+    # Failed but attempts remain -> retry restore
+    s = _state(restored_bytes=b"x", attempts=1, verification=_failing_verification())
+    assert route_after_verify(s, max_attempts=2) == "restore"
+
+    # Failed and out of attempts -> finalize anyway
+    s = _state(restored_bytes=b"x", attempts=2, verification=_failing_verification())
+    assert route_after_verify(s, max_attempts=2) == "finalize"
+
+
+def test_finalize_node_writes_outputs(tmp_path):
+    from photo_repair.nodes import finalize_node
+
+    s = _state(restored_bytes=b"NEW", verification=_passing_verification())
+    update = finalize_node(s, base_dir=str(tmp_path))
+    assert update["current_step"] == "completed"
+    assert update["output_path"]
+    from pathlib import Path
+
+    assert Path(update["output_path"]).exists()
