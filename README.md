@@ -50,7 +50,14 @@ uv run photo-repair path/to/folder/ --batch
 
 # Override the output directory
 uv run photo-repair photo.jpg --out ./results
+
+# Swap the restoration model for a single run (overrides RESTORE_IMAGE_MODEL)
+uv run photo-repair photo.jpg --model gemini-3-pro-image-preview
 ```
+
+The restoration model is easy to replace three ways, in increasing precedence:
+the `RESTORE_IMAGE_MODEL` default in `config.py`, the `RESTORE_IMAGE_MODEL` env var,
+and the per-run `--model` flag.
 
 Each run creates a timestamped directory under `OUTPUT_DIR` containing the restored image,
 a copy of the original, `analysis.json`, and `verification.json`.

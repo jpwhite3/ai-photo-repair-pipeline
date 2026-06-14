@@ -81,6 +81,27 @@ def test_main_empty_folder_returns_nonzero(tmp_path, mocker):
     runner.assert_not_called()
 
 
+def test_parse_args_captures_model_override():
+    from photo_repair.cli import _parse_args
+
+    args = _parse_args(["photo.jpg", "--model", "gemini-X"])
+    assert args.model == "gemini-X"
+    assert _parse_args(["photo.jpg"]).model is None
+
+
+def test_main_threads_model_override_to_runner(tmp_path, mocker):
+    from photo_repair import cli
+
+    img = tmp_path / "a.jpg"
+    img.write_bytes(b"x")
+    spy = mocker.patch.object(cli, "_build_default_runner", return_value=_make_runner(mocker))
+
+    rc = cli.main([str(img), "--model", "gemini-X"])
+
+    assert rc == 0
+    assert spy.call_args.kwargs.get("model_override") == "gemini-X"
+
+
 def test_main_passes_correct_mime(tmp_path, mocker):
     from photo_repair import cli
 

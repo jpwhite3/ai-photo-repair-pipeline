@@ -44,14 +44,14 @@ def _mime_for(path: Path) -> str:
     return guessed or "image/png"
 
 
-def _build_default_runner(out_override: str | None) -> RestoreFn:
+def _build_default_runner(out_override: str | None, model_override: str | None = None) -> RestoreFn:
     """Build the real pipeline runner from settings (validates the API key)."""
     from photo_repair.config import get_settings
     from photo_repair.graph import restore_photo
     from photo_repair.image_client import ImageClient
 
     settings = get_settings()
-    client = ImageClient.from_settings(settings)
+    client = ImageClient.from_settings(settings, restore_model=model_override)
     base_dir = out_override or settings.output_dir
     max_attempts = settings.max_restore_attempts
 
@@ -77,6 +77,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--batch", action="store_true", help="Treat PATH as a folder and restore every image in it."
     )
     parser.add_argument("--out", default=None, help="Output directory (overrides OUTPUT_DIR).")
+    parser.add_argument(
+        "--model",
+        default=None,
+        help="Restoration model id for this run (overrides RESTORE_IMAGE_MODEL).",
+    )
     return parser.parse_args(argv)
 
 
@@ -93,7 +98,7 @@ def main(argv: list[str] | None = None, restore_fn: RestoreFn | None = None) -> 
 
     if restore_fn is None:
         try:
-            restore_fn = _build_default_runner(args.out)
+            restore_fn = _build_default_runner(args.out, model_override=args.model)
         except Exception as err:  # noqa: BLE001 - surface config errors cleanly
             print(f"error: {err}", file=sys.stderr)
             print(

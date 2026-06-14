@@ -71,6 +71,18 @@ def test_analyze_returns_parsed_analysis(mocker):
     assert genai_client.models.generate_content.call_args.kwargs["model"] == "vision-model"
 
 
+def test_from_settings_allows_model_override(monkeypatch):
+    monkeypatch.setenv("GOOGLE_API_KEY", "k")
+    from photo_repair.config import get_settings
+    from photo_repair.image_client import ImageClient
+
+    get_settings.cache_clear()
+    client = ImageClient.from_settings(restore_model="custom-restore-model")
+    assert client._restore_model == "custom-restore-model"
+    # Untouched override falls back to the configured default.
+    assert client._analysis_model == "gemini-2.5-flash"
+
+
 def test_verify_returns_parsed_verification_with_both_images(mocker):
     from photo_repair.image_client import ImageClient
     from photo_repair.state import VerificationResult

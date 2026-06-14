@@ -27,13 +27,19 @@ class ImageClient:
         self._analysis_model = analysis_model
 
     @classmethod
-    def from_settings(cls, settings: Settings | None = None) -> ImageClient:
+    def from_settings(
+        cls,
+        settings: Settings | None = None,
+        restore_model: str | None = None,
+        analysis_model: str | None = None,
+    ) -> ImageClient:
+        """Build a client from settings, optionally overriding the model ids."""
         settings = settings or get_settings()
         client = genai.Client(api_key=settings.google_api_key.get_secret_value())
         return cls(
             client,
-            restore_model=settings.restore_image_model,
-            analysis_model=settings.analysis_model,
+            restore_model=restore_model or settings.restore_image_model,
+            analysis_model=analysis_model or settings.analysis_model,
         )
 
     # -- public API -------------------------------------------------------------
