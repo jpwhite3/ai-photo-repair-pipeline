@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # The image-editing model that performs the restoration. Swap this one value to
     # point at a different Google image model.
-    restore_image_model: str = Field("gemini-2.5-flash-image", alias="RESTORE_IMAGE_MODEL")
+    restore_image_model: str = Field("gemini-3.1-flash-lite", alias="RESTORE_IMAGE_MODEL")
 
     # Vision model used for damage/era analysis and post-restoration verification.
     analysis_model: str = Field("gemini-2.5-flash", alias="ANALYSIS_MODEL")
