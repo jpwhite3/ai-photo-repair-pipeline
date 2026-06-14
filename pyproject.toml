@@ -1,0 +1,41 @@
+[project]
+name = "photo-repair-pipeline"
+version = "0.1.0"
+description = "Cloud-based AI pipeline to repair old or damaged photos"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "google-genai>=1.8.0",
+    "langgraph>=0.6.3",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.10.1",
+    "python-dotenv>=1.1.1",
+    "pillow>=10.0",
+]
+
+[project.scripts]
+photo-repair = "photo_repair.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.12",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["photo_repair"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
