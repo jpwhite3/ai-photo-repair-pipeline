@@ -44,7 +44,9 @@ def _mime_for(path: Path) -> str:
     return guessed or "image/png"
 
 
-def _build_default_runner(out_override: str | None, model_override: str | None = None) -> RestoreFn:
+def _build_default_runner(
+    out_override: str | None, model_override: str | None = None, force: bool = False
+) -> RestoreFn:
     """Build the real pipeline runner from settings (validates the API key)."""
     from photo_repair.config import get_settings
     from photo_repair.graph import restore_photo
@@ -63,6 +65,7 @@ def _build_default_runner(out_override: str | None, model_override: str | None =
             mime_type=mime_type,
             max_attempts=max_attempts,
             base_dir=base_dir,
+            force=force,
         )
 
     return runner
@@ -82,6 +85,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         default=None,
         help="Restoration model id for this run (overrides RESTORE_IMAGE_MODEL).",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force recreation of analysis and plan.",
+    )
     return parser.parse_args(argv)
 
 
@@ -98,7 +106,9 @@ def main(argv: list[str] | None = None, restore_fn: RestoreFn | None = None) -> 
 
     if restore_fn is None:
         try:
-            restore_fn = _build_default_runner(args.out, model_override=args.model)
+            restore_fn = _build_default_runner(
+                args.out, model_override=args.model, force=args.force
+            )
         except Exception as err:  # noqa: BLE001 - surface config errors cleanly
             print(f"error: {err}", file=sys.stderr)
             print(
