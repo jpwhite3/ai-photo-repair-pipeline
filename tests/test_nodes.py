@@ -11,13 +11,29 @@ def _state(**kw):
 
 def _passing_verification():
     return VerificationResult(
-        composition_preserved=True, identity_preserved=True, quality_ok=True, issues=[]
+        composition_preserved=True,
+        identity_preserved=True,
+        clothing_preserved=True,
+        environment_preserved=True,
+        no_hallucinations_or_artifacts=True,
+        text_and_signage_preserved=True,
+        tonality_and_grain_preserved=True,
+        quality_ok=True,
+        issues=[],
     )
 
 
 def _failing_verification():
     return VerificationResult(
-        composition_preserved=False, identity_preserved=True, quality_ok=True, issues=["crop"]
+        composition_preserved=False,
+        identity_preserved=True,
+        clothing_preserved=True,
+        environment_preserved=True,
+        no_hallucinations_or_artifacts=True,
+        text_and_signage_preserved=True,
+        tonality_and_grain_preserved=True,
+        quality_ok=True,
+        issues=["crop"],
     )
 
 

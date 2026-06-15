@@ -64,6 +64,11 @@ def verify_node(state: RestorationState, client: ImageClient) -> dict:
         verification = VerificationResult(
             composition_preserved=False,
             identity_preserved=False,
+            clothing_preserved=False,
+            environment_preserved=False,
+            no_hallucinations_or_artifacts=False,
+            text_and_signage_preserved=False,
+            tonality_and_grain_preserved=False,
             quality_ok=False,
             issues=["No restored image was produced."],
         )
@@ -81,6 +86,11 @@ def verify_node(state: RestorationState, client: ImageClient) -> dict:
         verification = VerificationResult(
             composition_preserved=True,
             identity_preserved=True,
+            clothing_preserved=True,
+            environment_preserved=True,
+            no_hallucinations_or_artifacts=True,
+            text_and_signage_preserved=True,
+            tonality_and_grain_preserved=True,
             quality_ok=True,
             issues=[f"verification error: {err}"],
         )

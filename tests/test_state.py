@@ -5,28 +5,33 @@ def test_restoration_prompt_is_verbatim():
     """The user's restoration prompt must be stored EXACTLY, with no edits."""
     from photo_repair.prompts import RESTORATION_PROMPT
 
-    expected = (
-        "Restore this photo with period-accurate techniques, addressing any age-related "
-        "issues it may have, such as blurring, damage, fading, scratches, tears, folds, "
-        "worn-out areas, or being in black and white. First, analyze the image to identify "
-        "the approximate era and original photographic process to ensure a historically "
-        "accurate restoration. Make it look fresh and clear by gently sharpening soft edges "
-        "and facial features without overdoing it, smoothing out grainy spots or noise if "
-        "present, and reconstructing missing parts with realistic textures that match the "
-        "original. If colors are faded or absent, bring them back naturally and vibrantly "
-        "but true to the era's photographic technology without looking artificial; balance "
-        "colors to match natural lighting, adjust brightness and contrast so everything pops "
-        "nicely, and maintain original tonality. Add subtle details to objects or backgrounds "
-        "that might have been lost, like fine lines in clothing, lifelike skin textures, or "
-        "small elements in the scenery, while keeping the overall feel authentic, preserving "
-        "natural grain patterns, and not changing the composition. Ensure the whole image is "
-        "balanced, with no harsh shadows or washed-out areas, remove technical defects while "
-        "respecting the nostalgic charm and exposure qualities of the time. Finally, upscale "
-        "it to a higher resolution like Full HD 4k for better clarity, outputting in a "
-        "photo-realistic style that looks like a professionally restored or recent "
-        "high-quality photo. Do not change the composition of the image or the appearance of "
-        "any person within it."
-    )
+    expected = """
+ROLE & CORE DIRECTIVE
+
+You are a Master Archival Photo Restorer. Your objective is to perform a full, multi-stage archival restoration of the provided photograph.
+
+THE GOLDEN RULE: You must strictly preserve the historical and physical truth of the original image. Zero Additions, Zero Subtractions. Do not change the composition, do not alter the appearance, facial structure, or expressions of any person, and do not introduce objects, background elements, or clothing details that are not present in the original photograph. You are recreating and enhancing, never inventing.
+Execute this restoration through the following strict, sequential phases:
+
+PHASE 1: PRESERVATION ANALYSIS & MAPPING
+Before any restoration begins, analyze the image and explicitly list the following in text:
+Era & Medium: Identify the approximate era and original photographic process.
+Critical Anchor Points: Detail the exact facial features, expressions, clothing lines, and background elements that MUST be preserved exactly as they are.
+Degradation Profile: Note specific damage (blurring, fading, scratches, tears, folds, water stains, noise).
+
+PHASE 2: THE RESTORATION PLAN
+Based on your analysis, draft a unique, step-by-step restoration strategy addressing how you will repair the specific damage identified in Phase 1 using period-accurate techniques.
+
+PHASE 3: STRICT QUALITY AUDIT
+Cross-reference your Restoration Plan (Phase 2) against your Preservation Map (Phase 1). Explicitly confirm that your plan will not alter the original composition, hallucinate new details, or remove existing environmental elements. Once this audit passes, proceed to Execution.
+
+PHASE 4: EXECUTION & FINAL OUTPUT
+Generate the final restored image applying the following stages:
+Stage 1 — Structural Repair: Seamlessly remove physical degradation (cracks, creases, scratches, dust spots, and torn edges). Reconstruct severely damaged areas using highly restricted, context-aware inpainting that draws only from the surrounding original textures.
+Stage 2 — Fidelity Enhancement: Gently sharpen soft edges to clear up blur and de-noise severe artifacts. Ensure lifelike skin textures and fine clothing lines are restored without over-smoothing. The image should feature modern digital clarity while preserving the natural, authentic film grain of the era. Balance contrast to remove washed-out areas without creating harsh, artificial shadows.
+Stage 3 — Color & Tone (If Applicable): If restoring to color, convert the image using natural, historically accurate, subdued, and muted tones for skin, clothing, and environment. Ensure colors are naturally vibrant but true to the era's limitations. If remaining in black and white, maintain the original tonality and nostalgic exposure qualities.
+Final Polish: Upscale to a high-resolution, flawless finish (e.g., 4K clarity) that looks like a professionally restored physical photograph.
+"""
     assert RESTORATION_PROMPT == expected
 
 
@@ -57,6 +62,11 @@ def test_verification_result_model():
     v = VerificationResult(
         composition_preserved=True,
         identity_preserved=True,
+        clothing_preserved=True,
+        environment_preserved=True,
+        no_hallucinations_or_artifacts=True,
+        text_and_signage_preserved=True,
+        tonality_and_grain_preserved=True,
         quality_ok=True,
         issues=[],
     )
@@ -65,6 +75,11 @@ def test_verification_result_model():
     failing = VerificationResult(
         composition_preserved=False,
         identity_preserved=True,
+        clothing_preserved=True,
+        environment_preserved=True,
+        no_hallucinations_or_artifacts=True,
+        text_and_signage_preserved=True,
+        tonality_and_grain_preserved=True,
         quality_ok=True,
         issues=["crop changed"],
     )
@@ -78,6 +93,7 @@ def test_restoration_state_defaults():
     assert state.input_path == "/tmp/photo.jpg"
     assert state.attempts == 0
     assert state.analysis is None
+    assert state.plan is None
     assert state.restored_bytes is None
     assert state.notes == []
     assert state.current_step == "initialized"

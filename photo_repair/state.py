@@ -29,13 +29,37 @@ class VerificationResult(BaseModel):
     identity_preserved: bool = Field(
         description="True if no person's appearance/identity changed."
     )
+    clothing_preserved: bool = Field(
+        description="True if clothing style, details, fabrics, and patterns match."
+    )
+    environment_preserved: bool = Field(
+        description="True if scenery, background details, lighting, and objects match."
+    )
+    no_hallucinations_or_artifacts: bool = Field(
+        description="True if free of extra limbs, floating artifacts, or distortions."
+    )
+    text_and_signage_preserved: bool = Field(
+        description="True if text/writing is legible and matches the original."
+    )
+    tonality_and_grain_preserved: bool = Field(
+        description="True if authentic film grain and exposure contrast are kept (no plastic/over-smoothed look)."
+    )
     quality_ok: bool = Field(description="True if technical quality is acceptable.")
     issues: list[str] = Field(default_factory=list, description="Problems found, if any.")
 
     @property
     def passed(self) -> bool:
         """The restoration passes only if all hard constraints and quality hold."""
-        return self.composition_preserved and self.identity_preserved and self.quality_ok
+        return (
+            self.composition_preserved
+            and self.identity_preserved
+            and self.clothing_preserved
+            and self.environment_preserved
+            and self.no_hallucinations_or_artifacts
+            and self.text_and_signage_preserved
+            and self.tonality_and_grain_preserved
+            and self.quality_ok
+        )
 
 
 class RestorationState(BaseModel):
@@ -53,6 +77,7 @@ class RestorationState(BaseModel):
 
     # Intermediate / outputs
     analysis: RestorationAnalysis | None = None
+    plan: str | None = None
     restored_bytes: bytes | None = None
     verification: VerificationResult | None = None
     output_path: str | None = None

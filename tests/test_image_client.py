@@ -88,7 +88,15 @@ def test_verify_returns_parsed_verification_with_both_images(mocker):
     from photo_repair.state import VerificationResult
 
     parsed = VerificationResult(
-        composition_preserved=True, identity_preserved=True, quality_ok=True, issues=[]
+        composition_preserved=True,
+        identity_preserved=True,
+        clothing_preserved=True,
+        environment_preserved=True,
+        no_hallucinations_or_artifacts=True,
+        text_and_signage_preserved=True,
+        tonality_and_grain_preserved=True,
+        quality_ok=True,
+        issues=[],
     )
     genai_client = _make_client(mocker, _fake_response(parsed=parsed))
     client = ImageClient(genai_client, restore_model="img-model", analysis_model="vision-model")

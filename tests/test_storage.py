@@ -39,6 +39,11 @@ def test_save_restoration_outputs_writes_all_artifacts(tmp_path):
         verification=VerificationResult(
             composition_preserved=True,
             identity_preserved=True,
+            clothing_preserved=True,
+            environment_preserved=True,
+            no_hallucinations_or_artifacts=True,
+            text_and_signage_preserved=True,
+            tonality_and_grain_preserved=True,
             quality_ok=True,
             issues=[],
         ),
