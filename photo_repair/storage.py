@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from photo_repair.state import RestorationState
+    from photo_repair.state import RestorationAnalysis, RestorationState
 
 logger = logging.getLogger(__name__)
 
