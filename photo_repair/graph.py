@@ -15,6 +15,7 @@ from photo_repair.image_client import ImageClient
 from photo_repair.nodes import (
     analyze_node,
     finalize_node,
+    plan_node,
     restore_node,
     route_after_verify,
     verify_node,
@@ -27,12 +28,14 @@ def build_graph(client: ImageClient, max_attempts: int = 2, base_dir: str = "res
     graph = StateGraph(RestorationState)
 
     graph.add_node("analyze", partial(analyze_node, client=client))
+    graph.add_node("plan", partial(plan_node, client=client))
     graph.add_node("restore", partial(restore_node, client=client))
     graph.add_node("verify", partial(verify_node, client=client))
     graph.add_node("finalize", partial(finalize_node, base_dir=base_dir))
 
     graph.add_edge(START, "analyze")
-    graph.add_edge("analyze", "restore")
+    graph.add_edge("analyze", "plan")
+    graph.add_edge("plan", "restore")
     graph.add_edge("restore", "verify")
     graph.add_conditional_edges(
         "verify",

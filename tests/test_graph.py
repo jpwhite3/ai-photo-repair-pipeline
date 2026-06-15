@@ -40,6 +40,7 @@ def test_happy_path_runs_once(mocker, tmp_path):
 
     client = mocker.Mock()
     client.analyze.return_value = _analysis()
+    client.plan.return_value = "MY PLAN"
     client.restore.return_value = b"RESTORED"
     client.verify.return_value = _passing()
 
@@ -54,8 +55,10 @@ def test_happy_path_runs_once(mocker, tmp_path):
 
     assert final.current_step == "completed"
     assert final.restored_bytes == b"RESTORED"
+    assert final.plan == "MY PLAN"
     assert final.verification.passed is True
     assert final.output_path
+    assert client.plan.call_count == 1
     assert client.restore.call_count == 1
 
 
@@ -64,6 +67,7 @@ def test_retry_loop_reattempts_then_finalizes(mocker, tmp_path):
 
     client = mocker.Mock()
     client.analyze.return_value = _analysis()
+    client.plan.return_value = "MY PLAN"
     client.restore.side_effect = [b"FIRST", b"SECOND"]
     client.verify.side_effect = [_failing(), _passing()]
 
@@ -76,6 +80,7 @@ def test_retry_loop_reattempts_then_finalizes(mocker, tmp_path):
         base_dir=str(tmp_path),
     )
 
+    assert client.plan.call_count == 1
     assert client.restore.call_count == 2
     assert final.verification.passed is True
     assert final.current_step == "completed"
@@ -86,6 +91,7 @@ def test_retry_stops_at_max_attempts(mocker, tmp_path):
 
     client = mocker.Mock()
     client.analyze.return_value = _analysis()
+    client.plan.return_value = "MY PLAN"
     client.restore.return_value = b"RESTORED"
     client.verify.return_value = _failing()  # never passes
 
@@ -98,6 +104,7 @@ def test_retry_stops_at_max_attempts(mocker, tmp_path):
         base_dir=str(tmp_path),
     )
 
+    assert client.plan.call_count == 1
     assert client.restore.call_count == 3  # bounded by max_attempts
     assert final.current_step == "completed"
     assert final.verification.passed is False
