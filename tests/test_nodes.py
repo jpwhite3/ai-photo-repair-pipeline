@@ -58,14 +58,50 @@ def test_analyze_node_falls_back_on_error(mocker):
     assert isinstance(update["analysis"], RestorationAnalysis)  # fallback, not a crash
 
 
+def test_plan_node_success(mocker):
+    from photo_repair.nodes import plan_node
+
+    client = mocker.Mock()
+    client.plan.return_value = "RESTORE PLAN"
+    analysis = RestorationAnalysis(era="1950s", photographic_process="silver print", defects=["fading"])
+    state = _state(analysis=analysis)
+    update = plan_node(state, client)
+    assert update["plan"] == "RESTORE PLAN"
+    assert update["current_step"] == "planned"
+    client.plan.assert_called_once_with(b"OLD", "image/jpeg", analysis)
+
+
+def test_plan_node_falls_back_on_error(mocker):
+    from photo_repair.nodes import plan_node
+
+    client = mocker.Mock()
+    client.plan.side_effect = RuntimeError("boom")
+    update = plan_node(_state(), client)
+    assert "Restore the photo" in update["plan"]
+    assert update["current_step"] == "planned"
+
+
 def test_restore_node_increments_attempts_and_sets_bytes(mocker):
     from photo_repair.nodes import restore_node
 
     client = mocker.Mock()
     client.restore.return_value = b"NEW"
-    update = restore_node(_state(attempts=0), client)
+    state = _state(attempts=0, plan="PLAN HERE")
+    update = restore_node(state, client)
     assert update["restored_bytes"] == b"NEW"
     assert update["attempts"] == 1
+    client.restore.assert_called_once_with(b"OLD", "image/jpeg", "PLAN HERE", None)
+
+
+def test_restore_node_passes_plan_and_issues(mocker):
+    from photo_repair.nodes import restore_node
+
+    client = mocker.Mock()
+    client.restore.return_value = b"NEW"
+    state = _state(attempts=1, plan="PLAN HERE", verification=_failing_verification())
+    update = restore_node(state, client)
+    assert update["restored_bytes"] == b"NEW"
+    client.restore.assert_called_once_with(b"OLD", "image/jpeg", "PLAN HERE", ["crop"])
 
 
 def test_restore_node_records_failure_without_crashing(mocker):

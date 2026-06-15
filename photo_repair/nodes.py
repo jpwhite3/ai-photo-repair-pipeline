@@ -37,11 +37,30 @@ def analyze_node(state: RestorationState, client: ImageClient) -> dict:
     }
 
 
-def restore_node(state: RestorationState, client: ImageClient) -> dict:
-    """Run the image-edit restoration. Increments ``attempts`` every call."""
-    attempts = state.attempts + 1
+def plan_node(state: RestorationState, client: ImageClient) -> dict:
+    """Create a step-by-step restoration plan."""
+    analysis = state.analysis or RestorationAnalysis(era="unknown", photographic_process="unknown")
     try:
-        restored = client.restore(state.image_bytes, state.mime_type)
+        plan_text = client.plan(state.image_bytes, state.mime_type, analysis)
+        note = "Restoration plan generated."
+    except Exception as err:  # noqa: BLE001 - fallback by design
+        logger.exception("plan failed: %s", err)
+        plan_text = "Restore the photo, removing any defects and preserving composition."
+        note = f"Planning failed, fell back to default plan: {err}"
+    return {
+        "plan": plan_text,
+        "current_step": "planned",
+        "notes": state.notes + [note],
+    }
+
+
+def restore_node(state: RestorationState, client: ImageClient) -> dict:
+    """Run the image-edit restoration with the plan and feedback from previous verify attempts."""
+    attempts = state.attempts + 1
+    plan_text = state.plan or "Restore the photo."
+    issues = state.verification.issues if state.verification else None
+    try:
+        restored = client.restore(state.image_bytes, state.mime_type, plan_text, issues)
         return {
             "restored_bytes": restored,
             "attempts": attempts,
