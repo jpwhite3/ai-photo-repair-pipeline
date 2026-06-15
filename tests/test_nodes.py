@@ -64,11 +64,11 @@ def test_plan_node_success(mocker, tmp_path):
     client = mocker.Mock()
     client.plan.return_value = "RESTORE PLAN"
     analysis = RestorationAnalysis(era="1950s", photographic_process="silver print", defects=["fading"])
-    state = _state(analysis=analysis, base_dir=str(tmp_path))
+    state = _state(analysis=analysis, base_dir=str(tmp_path), no_colorize=True)
     update = plan_node(state, client)
     assert update["plan"] == "RESTORE PLAN"
     assert update["current_step"] == "planned"
-    client.plan.assert_called_once_with(b"OLD", "image/jpeg", analysis)
+    client.plan.assert_called_once_with(b"OLD", "image/jpeg", analysis, True)
 
 
 def test_plan_node_falls_back_on_error(mocker, tmp_path):

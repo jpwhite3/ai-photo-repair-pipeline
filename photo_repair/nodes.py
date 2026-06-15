@@ -69,7 +69,7 @@ def plan_node(state: RestorationState, client: ImageClient) -> dict:
 
     analysis = state.analysis or RestorationAnalysis(era="unknown", photographic_process="unknown")
     try:
-        plan_text = client.plan(state.image_bytes, state.mime_type, analysis)
+        plan_text = client.plan(state.image_bytes, state.mime_type, analysis, state.no_colorize)
         save_cached_plan(state.base_dir, image_hash, plan_text)
         note = "Restoration plan generated."
     except Exception as err:  # noqa: BLE001 - fallback by design

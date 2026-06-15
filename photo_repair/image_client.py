@@ -64,13 +64,36 @@ class ImageClient:
         )
         return self._coerce(response.parsed, RestorationAnalysis)
 
-    def plan(self, image_bytes: bytes, mime_type: str, analysis: RestorationAnalysis) -> str:
+    def plan(
+        self,
+        image_bytes: bytes,
+        mime_type: str,
+        analysis: RestorationAnalysis,
+        no_colorize: bool = False,
+    ) -> str:
         """Generate a step-by-step restoration plan based on analysis."""
+        is_bw = analysis.is_black_and_white
+        colorize = is_bw and not no_colorize
+
+        if colorize:
+            colorize_directive = (
+                "CRITICAL: The photograph is black and white, and colorization is requested. "
+                "You MUST include a detailed colorization step in your plan. Specify realistic, natural, "
+                "and historically accurate colors for skin, hair, clothing, and the background environment "
+                "appropriate to the era."
+            )
+        else:
+            colorize_directive = (
+                "The photograph should remain in black and white (or match its original color layout). "
+                "Maintain the original tonality and nostalgic exposure qualities."
+            )
+
         prompt_text = PLANNING_PROMPT.format(
             era=analysis.era,
             process=analysis.photographic_process,
             defects=", ".join(analysis.defects),
-            is_bw="Yes" if analysis.is_black_and_white else "No",
+            is_bw="Yes" if is_bw else "No",
+            colorize_directive=colorize_directive,
         )
         response = self._client.models.generate_content(
             model=self._analysis_model,

@@ -85,8 +85,34 @@ def test_plan_returns_detailed_plan(mocker):
         process="tintype",
         defects="scratches, fading",
         is_bw="Yes",
+        colorize_directive=(
+            "CRITICAL: The photograph is black and white, and colorization is requested. "
+            "You MUST include a detailed colorization step in your plan. Specify realistic, natural, "
+            "and historically accurate colors for skin, hair, clothing, and the background environment "
+            "appropriate to the era."
+        ),
     )
     assert expected_plan_prompt in sent_text
+
+
+def test_plan_does_not_colorize_when_disabled_or_not_bw(mocker):
+    from photo_repair.image_client import ImageClient
+    from photo_repair.state import RestorationAnalysis
+
+    response = _fake_response(parts=[_fake_part(text="STEP-BY-STEP PLAN")])
+    response.text = "STEP-BY-STEP PLAN"
+    genai_client = _make_client(mocker, response)
+    client = ImageClient(genai_client, restore_model="img-model", analysis_model="vision-model")
+
+    # B&W but no_colorize=True
+    analysis = RestorationAnalysis(era="1920s", photographic_process="tintype", is_black_and_white=True)
+    client.plan(b"OLDIMG", "image/jpeg", analysis, no_colorize=True)
+
+    call = genai_client.models.generate_content.call_args
+    sent_text = " ".join(
+        getattr(p, "text", "") or "" for p in call.kwargs["contents"] if getattr(p, "text", None)
+    )
+    assert "remain in black and white" in sent_text
 
 
 def test_analyze_returns_parsed_analysis(mocker):
