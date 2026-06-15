@@ -76,6 +76,7 @@ class RestorationState(BaseModel):
     mime_type: str = "image/png"
     base_dir: str = "restored_photos"
     force: bool = False
+    no_colorize: bool = False
 
     # Intermediate / outputs
     analysis: RestorationAnalysis | None = None

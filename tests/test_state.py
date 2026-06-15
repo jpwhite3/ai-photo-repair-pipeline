@@ -110,3 +110,4 @@ def test_restoration_state_defaults():
     assert state.current_step == "initialized"
     assert state.base_dir == "restored_photos"
     assert state.force is False
+    assert state.no_colorize is False
