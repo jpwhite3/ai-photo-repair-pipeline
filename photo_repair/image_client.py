@@ -14,7 +14,12 @@ from google import genai
 from google.genai import types
 
 from photo_repair.config import Settings, get_settings
-from photo_repair.prompts import ANALYSIS_PROMPT, RESTORATION_PROMPT, VERIFY_PROMPT
+from photo_repair.prompts import (
+    ANALYSIS_PROMPT,
+    PLANNING_PROMPT,
+    VERIFY_PROMPT,
+    build_restore_prompt,
+)
 from photo_repair.state import RestorationAnalysis, VerificationResult
 
 
@@ -59,16 +64,36 @@ class ImageClient:
         )
         return self._coerce(response.parsed, RestorationAnalysis)
 
-    def restore(self, image_bytes: bytes, mime_type: str) -> bytes:
+    def plan(self, image_bytes: bytes, mime_type: str, analysis: RestorationAnalysis) -> str:
+        """Generate a step-by-step restoration plan based on analysis."""
+        prompt_text = PLANNING_PROMPT.format(
+            era=analysis.era,
+            process=analysis.photographic_process,
+            defects=", ".join(analysis.defects),
+            is_bw="Yes" if analysis.is_black_and_white else "No",
+        )
+        response = self._client.models.generate_content(
+            model=self._analysis_model,
+            contents=[
+                types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+                types.Part.from_text(text=prompt_text),
+            ],
+        )
+        return response.text
+
+    def restore(
+        self, image_bytes: bytes, mime_type: str, plan: str, issues: list[str] | None = None
+    ) -> bytes:
         """Restore the photo, returning the new image bytes.
 
-        Sends the user's verbatim RESTORATION_PROMPT alongside the source image.
+        Sends the dynamic prompt (plan + issues) alongside the source image.
         """
+        prompt_text = build_restore_prompt(plan, issues)
         response = self._client.models.generate_content(
             model=self._restore_model,
             contents=[
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-                types.Part.from_text(text=RESTORATION_PROMPT),
+                types.Part.from_text(text=prompt_text),
             ],
             config=types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
         )
