@@ -74,6 +74,8 @@ class RestorationState(BaseModel):
     input_path: str
     image_bytes: bytes
     mime_type: str = "image/png"
+    base_dir: str = "restored_photos"
+    force: bool = False
 
     # Intermediate / outputs
     analysis: RestorationAnalysis | None = None
