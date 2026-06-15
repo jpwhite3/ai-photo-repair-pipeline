@@ -84,3 +84,57 @@ def save_restoration_outputs(state: RestorationState, base_dir: str = "restored_
         logger.exception("Failed to write one or more artifacts: %s", err)
 
     return str(out_dir.resolve())
+
+
+def get_image_hash(image_bytes: bytes) -> str:
+    """Return the SHA-256 hex digest of the image bytes."""
+    return hashlib.sha256(image_bytes).hexdigest()
+
+
+def get_cached_analysis(base_dir: str, image_hash: str) -> RestorationAnalysis | None:
+    """Load cached analysis JSON if it exists."""
+    cache_file = Path(base_dir) / ".cache" / f"{image_hash}_analysis.json"
+    if cache_file.exists():
+        try:
+            data = json.loads(cache_file.read_text(encoding="utf-8"))
+            from photo_repair.state import RestorationAnalysis
+            return RestorationAnalysis.model_validate(data)
+        except Exception as err:
+            logger.warning("Failed to load cached analysis: %s", err)
+    return None
+
+
+def save_cached_analysis(base_dir: str, image_hash: str, analysis: RestorationAnalysis) -> None:
+    """Save analysis JSON to the cache directory."""
+    cache_dir = Path(base_dir) / ".cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file = cache_dir / f"{image_hash}_analysis.json"
+    try:
+        cache_file.write_text(
+            json.dumps(analysis.model_dump(), indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    except Exception as err:
+        logger.warning("Failed to save cached analysis: %s", err)
+
+
+def get_cached_plan(base_dir: str, image_hash: str) -> str | None:
+    """Load cached restoration plan text if it exists."""
+    cache_file = Path(base_dir) / ".cache" / f"{image_hash}_plan.txt"
+    if cache_file.exists():
+        try:
+            return cache_file.read_text(encoding="utf-8")
+        except Exception as err:
+            logger.warning("Failed to load cached plan: %s", err)
+    return None
+
+
+def save_cached_plan(base_dir: str, image_hash: str, plan: str) -> None:
+    """Save restoration plan text to the cache directory."""
+    cache_dir = Path(base_dir) / ".cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file = cache_dir / f"{image_hash}_plan.txt"
+    try:
+        cache_file.write_text(plan, encoding="utf-8")
+    except Exception as err:
+        logger.warning("Failed to save cached plan: %s", err)

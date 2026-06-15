@@ -77,3 +77,57 @@ def test_save_restoration_outputs_returns_unique_dirs(tmp_path):
     d1 = save_restoration_outputs(s1, base_dir=str(tmp_path))
     d2 = save_restoration_outputs(s2, base_dir=str(tmp_path))
     assert d1 != d2
+
+
+def test_get_image_hash():
+    from photo_repair.storage import get_image_hash
+    h1 = get_image_hash(b"abc")
+    h2 = get_image_hash(b"abc")
+    h3 = get_image_hash(b"xyz")
+    assert h1 == h2
+    assert h1 != h3
+    assert len(h1) == 64  # sha256 hex is 64 chars
+
+
+def test_cache_analysis_read_write(tmp_path):
+    from photo_repair.state import RestorationAnalysis
+    from photo_repair.storage import get_cached_analysis, save_cached_analysis
+
+    base_dir = str(tmp_path)
+    image_hash = "fake-hash-123"
+
+    # Initially empty
+    assert get_cached_analysis(base_dir, image_hash) is None
+
+    analysis = RestorationAnalysis(
+        era="1950s",
+        photographic_process="silver print",
+        defects=["fading"],
+        is_black_and_white=True,
+        notes="some notes",
+    )
+    save_cached_analysis(base_dir, image_hash, analysis)
+
+    # Read back
+    cached = get_cached_analysis(base_dir, image_hash)
+    assert cached is not None
+    assert cached.era == "1950s"
+    assert cached.defects == ["fading"]
+    assert cached.is_black_and_white is True
+
+
+def test_cache_plan_read_write(tmp_path):
+    from photo_repair.storage import get_cached_plan, save_cached_plan
+
+    base_dir = str(tmp_path)
+    image_hash = "fake-hash-456"
+
+    # Initially empty
+    assert get_cached_plan(base_dir, image_hash) is None
+
+    plan_text = "Step 1: Repair scratches.\nStep 2: Colorize."
+    save_cached_plan(base_dir, image_hash, plan_text)
+
+    # Read back
+    cached = get_cached_plan(base_dir, image_hash)
+    assert cached == plan_text
