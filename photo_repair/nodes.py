@@ -12,15 +12,33 @@ import logging
 
 from photo_repair.image_client import ImageClient
 from photo_repair.state import RestorationAnalysis, RestorationState, VerificationResult
-from photo_repair.storage import save_restoration_outputs
+from photo_repair.storage import (
+    get_cached_analysis,
+    get_cached_plan,
+    get_image_hash,
+    save_cached_analysis,
+    save_cached_plan,
+    save_restoration_outputs,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def analyze_node(state: RestorationState, client: ImageClient) -> dict:
     """Characterise era / process / defects (fallback to 'unknown' on error)."""
+    image_hash = get_image_hash(state.image_bytes)
+    if not state.force:
+        cached = get_cached_analysis(state.base_dir, image_hash)
+        if cached:
+            return {
+                "analysis": cached,
+                "current_step": "analyzed",
+                "notes": state.notes + ["Loaded analysis from cache."],
+            }
+
     try:
         analysis = client.analyze(state.image_bytes, state.mime_type)
+        save_cached_analysis(state.base_dir, image_hash, analysis)
         note = f"Analyzed: {analysis.era}, {analysis.photographic_process}"
     except Exception as err:  # noqa: BLE001 - fallback by design
         logger.exception("analyze failed: %s", err)
@@ -39,9 +57,20 @@ def analyze_node(state: RestorationState, client: ImageClient) -> dict:
 
 def plan_node(state: RestorationState, client: ImageClient) -> dict:
     """Create a step-by-step restoration plan."""
+    image_hash = get_image_hash(state.image_bytes)
+    if not state.force:
+        cached = get_cached_plan(state.base_dir, image_hash)
+        if cached:
+            return {
+                "plan": cached,
+                "current_step": "planned",
+                "notes": state.notes + ["Loaded restoration plan from cache."],
+            }
+
     analysis = state.analysis or RestorationAnalysis(era="unknown", photographic_process="unknown")
     try:
         plan_text = client.plan(state.image_bytes, state.mime_type, analysis)
+        save_cached_plan(state.base_dir, image_hash, plan_text)
         note = "Restoration plan generated."
     except Exception as err:  # noqa: BLE001 - fallback by design
         logger.exception("plan failed: %s", err)

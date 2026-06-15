@@ -37,46 +37,46 @@ def _failing_verification():
     )
 
 
-def test_analyze_node_success(mocker):
+def test_analyze_node_success(mocker, tmp_path):
     from photo_repair.nodes import analyze_node
 
     client = mocker.Mock()
     client.analyze.return_value = RestorationAnalysis(
         era="1950s", photographic_process="silver print", defects=["fading"]
     )
-    update = analyze_node(_state(), client)
+    update = analyze_node(_state(base_dir=str(tmp_path)), client)
     assert update["analysis"].era == "1950s"
     assert update["current_step"] == "analyzed"
 
 
-def test_analyze_node_falls_back_on_error(mocker):
+def test_analyze_node_falls_back_on_error(mocker, tmp_path):
     from photo_repair.nodes import analyze_node
 
     client = mocker.Mock()
     client.analyze.side_effect = RuntimeError("boom")
-    update = analyze_node(_state(), client)
+    update = analyze_node(_state(base_dir=str(tmp_path)), client)
     assert isinstance(update["analysis"], RestorationAnalysis)  # fallback, not a crash
 
 
-def test_plan_node_success(mocker):
+def test_plan_node_success(mocker, tmp_path):
     from photo_repair.nodes import plan_node
 
     client = mocker.Mock()
     client.plan.return_value = "RESTORE PLAN"
     analysis = RestorationAnalysis(era="1950s", photographic_process="silver print", defects=["fading"])
-    state = _state(analysis=analysis)
+    state = _state(analysis=analysis, base_dir=str(tmp_path))
     update = plan_node(state, client)
     assert update["plan"] == "RESTORE PLAN"
     assert update["current_step"] == "planned"
     client.plan.assert_called_once_with(b"OLD", "image/jpeg", analysis)
 
 
-def test_plan_node_falls_back_on_error(mocker):
+def test_plan_node_falls_back_on_error(mocker, tmp_path):
     from photo_repair.nodes import plan_node
 
     client = mocker.Mock()
     client.plan.side_effect = RuntimeError("boom")
-    update = plan_node(_state(), client)
+    update = plan_node(_state(base_dir=str(tmp_path)), client)
     assert "Restore the photo" in update["plan"]
     assert update["current_step"] == "planned"
 
@@ -158,3 +158,59 @@ def test_finalize_node_writes_outputs(tmp_path):
     from pathlib import Path
 
     assert Path(update["output_path"]).exists()
+
+
+def test_analyze_node_caching(mocker, tmp_path):
+    from photo_repair.nodes import analyze_node
+
+    client = mocker.Mock()
+    client.analyze.return_value = RestorationAnalysis(
+        era="1950s", photographic_process="silver print", defects=["fading"]
+    )
+
+    base_dir = str(tmp_path)
+    state = _state(base_dir=base_dir)
+
+    # 1. Cache miss
+    update1 = analyze_node(state, client)
+    assert update1["analysis"].era == "1950s"
+    assert client.analyze.call_count == 1
+
+    # 2. Cache hit (does not call client.analyze again)
+    update2 = analyze_node(state, client)
+    assert update2["analysis"].era == "1950s"
+    assert client.analyze.call_count == 1
+    assert "Loaded analysis from cache" in update2["notes"][-1]
+
+    # 3. Force recreate (ignores cache and calls client.analyze)
+    state_force = _state(base_dir=base_dir, force=True)
+    update3 = analyze_node(state_force, client)
+    assert update3["analysis"].era == "1950s"
+    assert client.analyze.call_count == 2
+
+
+def test_plan_node_caching(mocker, tmp_path):
+    from photo_repair.nodes import plan_node
+
+    client = mocker.Mock()
+    client.plan.return_value = "RESTORE PLAN TEXT"
+
+    base_dir = str(tmp_path)
+    state = _state(base_dir=base_dir)
+
+    # 1. Cache miss
+    update1 = plan_node(state, client)
+    assert update1["plan"] == "RESTORE PLAN TEXT"
+    assert client.plan.call_count == 1
+
+    # 2. Cache hit (does not call client.plan again)
+    update2 = plan_node(state, client)
+    assert update2["plan"] == "RESTORE PLAN TEXT"
+    assert client.plan.call_count == 1
+    assert "Loaded restoration plan from cache" in update2["notes"][-1]
+
+    # 3. Force recreate (ignores cache and calls client.plan)
+    state_force = _state(base_dir=base_dir, force=True)
+    update3 = plan_node(state_force, client)
+    assert update3["plan"] == "RESTORE PLAN TEXT"
+    assert client.plan.call_count == 2
