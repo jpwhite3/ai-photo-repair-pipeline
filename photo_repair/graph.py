@@ -55,6 +55,7 @@ def restore_photo(
     max_attempts: int = 2,
     base_dir: str = "restored_photos",
     force: bool = False,
+    no_colorize: bool = False,
 ) -> RestorationState:
     """Run the full pipeline on one image and return the final state."""
     graph = build_graph(client, max_attempts=max_attempts, base_dir=base_dir)
@@ -64,6 +65,7 @@ def restore_photo(
         mime_type=mime_type,
         base_dir=base_dir,
         force=force,
+        no_colorize=no_colorize,
     )
     result = graph.invoke(initial)
     # LangGraph returns the final state values (dict-like); normalise to RestorationState.

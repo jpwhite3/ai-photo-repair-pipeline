@@ -45,7 +45,10 @@ def _mime_for(path: Path) -> str:
 
 
 def _build_default_runner(
-    out_override: str | None, model_override: str | None = None, force: bool = False
+    out_override: str | None,
+    model_override: str | None = None,
+    force: bool = False,
+    no_colorize: bool = False,
 ) -> RestoreFn:
     """Build the real pipeline runner from settings (validates the API key)."""
     from photo_repair.config import get_settings
@@ -66,6 +69,7 @@ def _build_default_runner(
             max_attempts=max_attempts,
             base_dir=base_dir,
             force=force,
+            no_colorize=no_colorize,
         )
 
     return runner
@@ -90,6 +94,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         action="store_true",
         help="Force recreation of analysis and plan.",
     )
+    parser.add_argument(
+        "--no-colorize",
+        action="store_true",
+        help="Do not colorize the image if it is black and white.",
+    )
     return parser.parse_args(argv)
 
 
@@ -107,7 +116,10 @@ def main(argv: list[str] | None = None, restore_fn: RestoreFn | None = None) -> 
     if restore_fn is None:
         try:
             restore_fn = _build_default_runner(
-                args.out, model_override=args.model, force=args.force
+                args.out,
+                model_override=args.model,
+                force=args.force,
+                no_colorize=args.no_colorize,
             )
         except Exception as err:  # noqa: BLE001 - surface config errors cleanly
             print(f"error: {err}", file=sys.stderr)

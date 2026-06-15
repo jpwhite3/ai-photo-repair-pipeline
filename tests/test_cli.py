@@ -84,11 +84,13 @@ def test_main_empty_folder_returns_nonzero(tmp_path, mocker):
 def test_parse_args_captures_model_override():
     from photo_repair.cli import _parse_args
 
-    args = _parse_args(["photo.jpg", "--model", "gemini-X", "--force"])
+    args = _parse_args(["photo.jpg", "--model", "gemini-X", "--force", "--no-colorize"])
     assert args.model == "gemini-X"
     assert args.force is True
+    assert args.no_colorize is True
     assert _parse_args(["photo.jpg"]).model is None
     assert _parse_args(["photo.jpg"]).force is False
+    assert _parse_args(["photo.jpg"]).no_colorize is False
 
 
 def test_main_threads_model_override_to_runner(tmp_path, mocker):
@@ -98,11 +100,12 @@ def test_main_threads_model_override_to_runner(tmp_path, mocker):
     img.write_bytes(b"x")
     spy = mocker.patch.object(cli, "_build_default_runner", return_value=_make_runner(mocker))
 
-    rc = cli.main([str(img), "--model", "gemini-X", "--force"])
+    rc = cli.main([str(img), "--model", "gemini-X", "--force", "--no-colorize"])
 
     assert rc == 0
     assert spy.call_args.kwargs.get("model_override") == "gemini-X"
     assert spy.call_args.kwargs.get("force") is True
+    assert spy.call_args.kwargs.get("no_colorize") is True
 
 
 def test_main_passes_correct_mime(tmp_path, mocker):

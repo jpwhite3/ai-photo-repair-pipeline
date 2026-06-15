@@ -51,11 +51,13 @@ def test_happy_path_runs_once(mocker, tmp_path):
         mime_type="image/jpeg",
         max_attempts=2,
         base_dir=str(tmp_path),
+        no_colorize=True,
     )
 
     assert final.current_step == "completed"
     assert final.restored_bytes == b"RESTORED"
     assert final.plan == "MY PLAN"
+    assert final.no_colorize is True
     assert final.verification.passed is True
     assert final.output_path
     assert client.plan.call_count == 1
