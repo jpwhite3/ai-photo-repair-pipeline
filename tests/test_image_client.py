@@ -57,8 +57,8 @@ def test_restore_raises_when_no_image_returned(mocker):
 
 def test_plan_returns_detailed_plan(mocker):
     from photo_repair.image_client import ImageClient
-    from photo_repair.state import RestorationAnalysis
     from photo_repair.prompts import PLANNING_PROMPT
+    from photo_repair.state import RestorationAnalysis
 
     response = _fake_response(parts=[_fake_part(text="STEP-BY-STEP PLAN")])
     # The text model response is accessed via response.text
