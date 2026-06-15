@@ -40,6 +40,17 @@ def test_analysis_and_verify_prompts_exist():
 
     assert isinstance(prompts.ANALYSIS_PROMPT, str) and prompts.ANALYSIS_PROMPT
     assert isinstance(prompts.VERIFY_PROMPT, str) and prompts.VERIFY_PROMPT
+    assert isinstance(prompts.PLANNING_PROMPT, str) and prompts.PLANNING_PROMPT
+
+    # Verify build_restore_prompt
+    rest_prompt = prompts.build_restore_prompt("STEP 1: Fix scratches")
+    assert "STEP 1: Fix scratches" in rest_prompt
+    assert "CRITICAL" not in rest_prompt
+
+    retry_prompt = prompts.build_restore_prompt("STEP 1: Fix scratches", ["composition off"])
+    assert "STEP 1: Fix scratches" in retry_prompt
+    assert "CRITICAL" in retry_prompt
+    assert "composition off" in retry_prompt
 
 
 def test_restoration_analysis_model():
