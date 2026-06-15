@@ -48,8 +48,9 @@ ANALYSIS_PROMPT = (
 PLANNING_PROMPT = (
     "You are a Master Archival Photo Restorer. Analyze this photograph and its condition report:\n"
     "Era: {era}, Process: {process}, Defects: {defects}, Black & White: {is_bw}.\n"
+    "Colorization Directive: {colorize_directive}\n\n"
     "Draft a step-by-step restoration plan to repair this photograph.\n"
-    "Your plan must address how to repair each defect (e.g. scratch removal, de-noising, color restoration) "
+    "Your plan must address how to repair each defect (e.g. scratch removal, de-noising) "
     "using period-accurate techniques. Detail what elements must be preserved exactly (facial structures, "
     "clothing styles, background scenery) and define the final target aesthetic (e.g., preserving authentic "
     "film grain, avoiding an airbrushed/plastic look). Output a detailed plan in markdown format."
@@ -83,6 +84,8 @@ VERIFY_PROMPT = (
     "5. no_hallucinations_or_artifacts: True if free of extra limbs, floating artifacts, or distortions.\n"
     "6. text_and_signage_preserved: True if text/writing is legible and matches the original.\n"
     "7. tonality_and_grain_preserved: True if authentic film grain and exposure contrast are kept (no plastic/over-smoothed look).\n"
-    "8. quality_ok: True if overall restoration is clean and professional.\n\n"
+    "8. quality_ok: True if overall restoration is clean, professional, and high quality. "
+    "Note: If the original is black and white but the restored is colorized, verify that the colorization "
+    "is natural, realistic, and period-appropriate (no modern neon shades, cartoonish skin tones, or bleeding colors).\n\n"
     "Identify any issues carefully."
 )
